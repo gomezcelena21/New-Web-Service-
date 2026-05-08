@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'Editar' if producto else 'Nuevo' }} Producto — Dulce Malia</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+</head>
+<body class="admin-body">
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-logo">🎂 Dulce Malia<span>Panel admin</span></div>
+    <ul class="admin-nav">
+      <li><a href="/admin">📊 Dashboard</a></li>
+      <li><a href="/admin/productos" class="activo">🎂 Productos</a></li>
+      <li><a href="/admin/productos/nuevo">➕ Nuevo Producto</a></li>
+      <li><a href="/admin/pedidos">📋 Pedidos</a></li>
+      <li><a href="/" target="_blank">🌐 Ver Tienda</a></li>
+      <li><a href="/admin/logout">🚪 Cerrar Sesión</a></li>
+    </ul>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 class="admin-titulo">{{ '✏️ Editar Producto' if producto else '➕ Nuevo Producto' }}</h1>
+      <a href="/admin/productos" class="btn btn-secundario btn-sm">← Volver</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+      <div style="background:#d4edda; color:#155724; padding:14px 18px; border-radius:var(--radio); margin-bottom:20px;">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" enctype="multipart/form-data" class="admin-form">
+
+      <div class="form-grupo">
+        <label>🏷️ Nombre del producto *</label>
+        <input type="text" name="nombre" value="{{ producto.nombre if producto else '' }}" placeholder="Ej: Chocotorta Artesanal" required>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="form-grupo">
+          <label>💰 Precio *</label>
+          <input type="number" name="precio" value="{{ producto.precio if producto else '' }}" placeholder="4500" step="50" required>
+        </div>
+        <div class="form-grupo">
+          <label>📦 Stock</label>
+          <input type="number" name="stock" value="{{ producto.stock if producto else '99' }}" placeholder="99">
+        </div>
+      </div>
+
+      <div class="form-grupo">
+        <label>📁 Categoría *</label>
+        <select name="categoria_id" required>
+          {% for cat in categorias %}
+          <option value="{{ cat.id }}" {% if producto and producto.categoria_id == cat.id %}selected{% endif %}>
+            {{ cat.emoji }} {{ cat.nombre }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-grupo">
+        <label>📝 Descripción</label>
+        <textarea name="descripcion" rows="3" placeholder="Descripción del producto, ingredientes especiales, etc.">{{ producto.descripcion if producto else '' }}</textarea>
+      </div>
+
+      <div class="form-grupo">
+        <label>🖼️ Imagen del producto</label>
+        {% if producto and producto.imagen and producto.imagen != 'default_cake.png' %}
+        <div style="margin-bottom:10px;">
+          <img src="{{ url_for('static', filename='uploads/' + producto.imagen) }}" style="height:80px; border-radius:10px; object-fit:cover;">
+          <span style="font-size:0.82rem; color:var(--texto-claro); margin-left:8px;">Imagen actual</span>
+        </div>
+        {% endif %}
+        <input type="file" name="imagen" accept="image/*" style="padding:10px; border:1.5px dashed var(--crema-oscuro); border-radius:var(--radio); width:100%; background:var(--crema); cursor:pointer;">
+        <p style="font-size:0.8rem; color:var(--texto-claro); margin-top:6px;">📌 Formatos: JPG, PNG, WEBP. Máximo 16MB.</p>
+      </div>
+
+      <div style="display:flex; gap:24px; margin-bottom:24px;">
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; color:var(--texto);">
+          <input type="checkbox" name="destacado" style="width:18px; height:18px; accent-color:var(--rosa-oscuro);"
+            {% if producto and producto.destacado %}checked{% endif %}>
+          ⭐ Producto destacado (aparece en inicio)
+        </label>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; color:var(--texto);">
+          <input type="checkbox" name="disponible" style="width:18px; height:18px; accent-color:var(--rosa-oscuro);"
+            {% if not producto or producto.disponible %}checked{% endif %}>
+          ✅ Disponible (visible en la tienda)
+        </label>
+      </div>
+
+      <div style="display:flex; gap:12px;">
+        <button type="submit" class="btn btn-primary btn-lg">
+          {{ '💾 Guardar cambios' if producto else '✅ Agregar producto' }}
+        </button>
+        <a href="/admin/productos" class="btn btn-secundario btn-lg">Cancelar</a>
+      </div>
+    </form>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Productos — Dulce Malia Admin</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+</head>
+
+<body class="admin-body">
+
+<div class="admin-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+
+    <div class="admin-logo">
+      🎂 Dulce Malia
+      <span>Panel admin</span>
+    </div>
+
+    <ul class="admin-nav">
+      <li><a href="/admin">📊 Dashboard</a></li>
+
+      <li>
+        <a href="/admin/productos" class="activo">
+          🎂 Productos
+        </a>
+      </li>
+
+      <li>
+        <a href="/admin/productos/nuevo">
+          ➕ Nuevo Producto
+        </a>
+      </li>
+
+      <li><a href="/admin/pedidos">📋 Pedidos</a></li>
+
+      <li>
+        <a href="/" target="_blank">
+          🌐 Ver Tienda
+        </a>
+      </li>
+
+      <li>
+        <a href="/admin/logout">
+          🚪 Cerrar Sesión
+        </a>
+      </li>
+    </ul>
+
+  </aside>
+
+  <!-- CONTENIDO -->
+  <main class="admin-main">
+
+    <!-- TOPBAR -->
+    <div class="admin-topbar">
+
+      <h1 class="admin-titulo">
+        🎂 Productos
+      </h1>
+
+      <a href="/admin/productos/nuevo" class="btn btn-primary">
+        ➕ Agregar Producto
+      </a>
+
+    </div>
+
+    <!-- ALERTAS -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+
+        <div class="alert alert-{{ category }}">
+          {{ message }}
+        </div>
+
+      {% endfor %}
+    {% endwith %}
+
+    <!-- TABLA -->
+    <div class="admin-tabla-wrap">
+
+      <table class="admin-tabla">
+
+        <thead>
+          <tr>
+            <th>Imagen</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {% for p in productos %}
+
+          <tr>
+
+            <!-- IMAGEN -->
+            <td>
+
+              {% if p.imagen and p.imagen != 'default_cake.png' %}
+
+                <img
+                  src="{{ url_for('static', filename='uploads/' + p.imagen) }}"
+                  class="admin-producto-img"
+                >
+
+              {% else %}
+
+                <div class="admin-producto-placeholder">
+                  🎂
+                </div>
+
+              {% endif %}
+
+            </td>
+
+            <!-- NOMBRE -->
+            <td>
+
+              <strong>{{ p.nombre }}</strong>
+
+              {% if p.destacado %}
+                <span class="badge-destacado">
+                  ⭐ Destacado
+                </span>
+              {% endif %}
+
+            </td>
+
+            <!-- CATEGORÍA -->
+            <td>
+              {{ p.categoria.nombre }}
+            </td>
+
+            <!-- PRECIO -->
+            <td>
+              <strong>
+                ${{ "{:,.0f}".format(p.precio) }}
+              </strong>
+            </td>
+
+            <!-- STOCK -->
+            <td>
+              {{ p.stock }}
+            </td>
+
+            <!-- ESTADO -->
+            <td>
+
+              {% if p.disponible %}
+
+                <span class="estado-activo">
+                  ✅ Activo
+                </span>
+
+              {% else %}
+
+                <span class="estado-inactivo">
+                  ❌ Inactivo
+                </span>
+
+              {% endif %}
+
+            </td>
+
+            <!-- ACCIONES -->
+            <td>
+
+              <div class="admin-acciones">
+
+                <a
+                  href="/admin/productos/editar/{{ p.id }}"
+                  class="btn btn-sm btn-rosa"
+                >
+                  ✏️ Editar
+                </a>
+
+                <form
+                  method="POST"
+                  action="/admin/productos/eliminar/{{ p.id }}"
+                  onsubmit="return confirm('¿Desactivar este producto?')"
+                >
+
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-eliminar"
+                  >
+                    🗑️
+                  </button>
+
+                </form>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </main>
+
+</div>
+
+</body>
+</html>

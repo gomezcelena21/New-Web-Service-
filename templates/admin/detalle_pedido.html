@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido #{{ pedido.id }} — Dulce Malia Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+</head>
+<body class="admin-body">
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-logo">🎂 Dulce Malia<span>Panel admin</span></div>
+    <ul class="admin-nav">
+      <li><a href="/admin">📊 Dashboard</a></li>
+      <li><a href="/admin/productos">🎂 Productos</a></li>
+      <li><a href="/admin/productos/nuevo">➕ Nuevo Producto</a></li>
+      <li><a href="/admin/pedidos" class="activo">📋 Pedidos</a></li>
+      <li><a href="/" target="_blank">🌐 Ver Tienda</a></li>
+      <li><a href="/admin/logout">🚪 Cerrar Sesión</a></li>
+    </ul>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 class="admin-titulo">📋 Pedido #{{ pedido.id }}</h1>
+      <div style="display:flex; gap:10px;">
+        <a href="{{ wa_link }}" target="_blank" class="btn btn-wa btn-sm">💬 Enviar por WhatsApp</a>
+        <a href="/admin/pedidos" class="btn btn-secundario btn-sm">← Volver</a>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+      <div style="background:#d4edda; color:#155724; padding:14px 18px; border-radius:var(--radio); margin-bottom:20px;">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
+      <!-- Datos del cliente -->
+      <div style="background:white; border-radius:var(--radio); padding:24px; box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+        <h3 style="font-family:'Playfair Display',serif; color:var(--chocolate); margin-bottom:16px;">👤 Datos del cliente</h3>
+        <table style="width:100%; font-size:0.92rem;">
+          <tr><td style="padding:6px 0; color:var(--texto-claro); font-weight:700; width:120px;">Nombre</td><td>{{ pedido.nombre_cliente }}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--texto-claro); font-weight:700;">Teléfono</td><td><a href="https://wa.me/54{{ pedido.telefono }}" target="_blank" style="color:var(--rosa-oscuro);">{{ pedido.telefono }}</a></td></tr>
+          <tr><td style="padding:6px 0; color:var(--texto-claro); font-weight:700;">Dirección</td><td>{{ pedido.direccion or '—' }}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--texto-claro); font-weight:700;">Pago</td><td>{{ pedido.metodo_pago.title() }}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--texto-claro); font-weight:700;">Fecha</td><td>{{ pedido.creado_en.strftime('%d/%m/%Y a las %H:%M') }}</td></tr>
+          {% if pedido.comentarios %}
+          <tr><td style="padding:6px 0; color:var(--texto-claro); font-weight:700; vertical-align:top;">Comentarios</td><td style="font-style:italic;">{{ pedido.comentarios }}</td></tr>
+          {% endif %}
+        </table>
+      </div>
+
+      <!-- Estado y acciones -->
+      <div style="background:white; border-radius:var(--radio); padding:24px; box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+        <h3 style="font-family:'Playfair Display',serif; color:var(--chocolate); margin-bottom:16px;">⚙️ Estado del pedido</h3>
+        <div style="margin-bottom:20px;">
+          <span class="badge-estado badge-{{ pedido.estado }}" style="font-size:1rem; padding:8px 18px;">
+            {% if pedido.estado == 'pendiente' %}⏳{% elif pedido.estado == 'preparando' %}👩‍🍳{% elif pedido.estado == 'listo' %}✅{% elif pedido.estado == 'entregado' %}📦{% else %}❌{% endif %}
+            {{ pedido.estado.title() }}
+          </span>
+        </div>
+        <form method="POST" action="/admin/pedidos/estado/{{ pedido.id }}">
+          <div class="form-grupo">
+            <label>Cambiar estado a:</label>
+            <select name="estado">
+              <option value="pendiente" {% if pedido.estado == 'pendiente' %}selected{% endif %}>⏳ Pendiente</option>
+              <option value="preparando" {% if pedido.estado == 'preparando' %}selected{% endif %}>👩‍🍳 Preparando</option>
+              <option value="listo" {% if pedido.estado == 'listo' %}selected{% endif %}>✅ Listo para entregar</option>
+              <option value="entregado" {% if pedido.estado == 'entregado' %}selected{% endif %}>📦 Entregado</option>
+              <option value="cancelado" {% if pedido.estado == 'cancelado' %}selected{% endif %}>❌ Cancelado</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">💾 Actualizar estado</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Productos del pedido -->
+    <div style="background:white; border-radius:var(--radio); padding:24px; box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+      <h3 style="font-family:'Playfair Display',serif; color:var(--chocolate); margin-bottom:16px;">🛍️ Productos del pedido</h3>
+      <table class="admin-tabla">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Precio unitario</th>
+            <th>Cantidad</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in pedido.detalles %}
+          <tr>
+            <td><strong>{{ d.nombre_producto }}</strong></td>
+            <td>${{ "{:,.0f}".format(d.precio_unitario) }}</td>
+            <td><strong>× {{ d.cantidad }}</strong></td>
+            <td><strong>${{ "{:,.0f}".format(d.subtotal) }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="text-align:right; font-weight:700; padding:16px; font-size:1rem;">TOTAL:</td>
+            <td style="font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--chocolate); padding:16px;">
+              ${{ "{:,.0f}".format(pedido.total) }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </main>
+</div>
+</body>
+</html>

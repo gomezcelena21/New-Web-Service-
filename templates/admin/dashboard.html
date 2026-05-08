@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Dulce Malia Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+</head>
+<body class="admin-body">
+
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="admin-logo">
+      🎂 Dulce Malia
+      <span>Panel de administración</span>
+    </div>
+    <ul class="admin-nav">
+      <li><a href="/admin" class="activo">📊 Dashboard</a></li>
+      <li><a href="/admin/productos">🎂 Productos</a></li>
+      <li><a href="/admin/productos/nuevo">➕ Nuevo Producto</a></li>
+      <li><a href="/admin/pedidos">📋 Pedidos</a></li>
+      <li><a href="/" target="_blank">🌐 Ver Tienda</a></li>
+      <li><a href="/admin/logout" style="margin-top:auto; border-top:1px solid rgba(255,255,255,0.1);">🚪 Cerrar Sesión</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 class="admin-titulo">📊 Dashboard</h1>
+      <div>
+        <a href="/admin/productos/nuevo" class="btn btn-primary btn-sm">➕ Nuevo Producto</a>
+      </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="admin-cards">
+      <div class="admin-card">
+        <div class="icono">📦</div>
+        <div class="valor">{{ total_productos }}</div>
+        <div class="etiqueta">Productos activos</div>
+      </div>
+      <div class="admin-card">
+        <div class="icono">📋</div>
+        <div class="valor">{{ total_pedidos }}</div>
+        <div class="etiqueta">Pedidos totales</div>
+      </div>
+      <div class="admin-card">
+        <div class="icono">⏳</div>
+        <div class="valor">{{ pedidos_pendientes }}</div>
+        <div class="etiqueta">Pendientes</div>
+      </div>
+      <div class="admin-card">
+        <div class="icono">💰</div>
+        <div class="valor">${{ "{:,.0f}".format(ingresos) }}</div>
+        <div class="etiqueta">Ingresos totales</div>
+      </div>
+    </div>
+
+    <!-- Pedidos recientes -->
+    <div style="background:white; border-radius:var(--radio); padding:24px; box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="font-family:'Playfair Display',serif; font-size:1.3rem; color:var(--chocolate);">Pedidos recientes</h2>
+        <a href="/admin/pedidos" style="font-size:0.88rem; color:var(--rosa-oscuro); text-decoration:none;">Ver todos →</a>
+      </div>
+
+      {% if pedidos_recientes %}
+      <table class="admin-tabla">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th>Total</th>
+            <th>Pago</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pedidos_recientes %}
+          <tr>
+            <td><strong>#{{ p.id }}</strong></td>
+            <td>{{ p.nombre_cliente }}</td>
+            <td><strong>${{ "{:,.0f}".format(p.total) }}</strong></td>
+            <td>{{ p.metodo_pago.title() }}</td>
+            <td>
+              <span class="badge-estado badge-{{ p.estado }}">
+                {% if p.estado == 'pendiente' %}⏳{% elif p.estado == 'preparando' %}👩‍🍳{% elif p.estado == 'listo' %}✅{% else %}📦{% endif %}
+                {{ p.estado.title() }}
+              </span>
+            </td>
+            <td style="font-size:0.82rem; color:var(--texto-claro);">
+              {{ p.creado_en.strftime('%d/%m %H:%M') }}
+            </td>
+            <td>
+              <a href="/admin/pedidos/{{ p.id }}" class="btn btn-sm btn-rosa">Ver</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="text-align:center; padding:40px; color:var(--texto-claro);">
+        <div style="font-size:2.5rem; margin-bottom:8px;">📋</div>
+        <p>Todavía no hay pedidos.</p>
+      </div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

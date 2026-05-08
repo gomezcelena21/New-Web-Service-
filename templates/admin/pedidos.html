@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedidos — Dulce Malia Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+</head>
+<body class="admin-body">
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-logo">🎂 Dulce Malia<span>Panel admin</span></div>
+    <ul class="admin-nav">
+      <li><a href="/admin">📊 Dashboard</a></li>
+      <li><a href="/admin/productos">🎂 Productos</a></li>
+      <li><a href="/admin/productos/nuevo">➕ Nuevo Producto</a></li>
+      <li><a href="/admin/pedidos" class="activo">📋 Pedidos</a></li>
+      <li><a href="/" target="_blank">🌐 Ver Tienda</a></li>
+      <li><a href="/admin/logout">🚪 Cerrar Sesión</a></li>
+    </ul>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 class="admin-titulo">📋 Pedidos</h1>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+      <div style="background:#d4edda; color:#155724; padding:14px 18px; border-radius:var(--radio); margin-bottom:20px;">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <!-- Filtros por estado -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">
+      <a href="/admin/pedidos" class="btn btn-sm {% if not estado_filtro %}btn-primary{% else %}btn-secundario{% endif %}">Todos</a>
+      <a href="/admin/pedidos?estado=pendiente" class="btn btn-sm {% if estado_filtro == 'pendiente' %}btn-primary{% else %}btn-secundario{% endif %}">⏳ Pendientes</a>
+      <a href="/admin/pedidos?estado=preparando" class="btn btn-sm {% if estado_filtro == 'preparando' %}btn-primary{% else %}btn-secundario{% endif %}">👩‍🍳 Preparando</a>
+      <a href="/admin/pedidos?estado=listo" class="btn btn-sm {% if estado_filtro == 'listo' %}btn-primary{% else %}btn-secundario{% endif %}">✅ Listos</a>
+      <a href="/admin/pedidos?estado=entregado" class="btn btn-sm {% if estado_filtro == 'entregado' %}btn-primary{% else %}btn-secundario{% endif %}">📦 Entregados</a>
+    </div>
+
+    {% if pedidos %}
+    <div style="background:white; border-radius:var(--radio); box-shadow:0 2px 12px rgba(0,0,0,0.06); overflow:hidden;">
+      <table class="admin-tabla">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th>Teléfono</th>
+            <th>Total</th>
+            <th>Pago</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pedidos %}
+          <tr>
+            <td><strong>#{{ p.id }}</strong></td>
+            <td><strong>{{ p.nombre_cliente }}</strong></td>
+            <td>
+              <a href="https://wa.me/54{{ p.telefono }}" target="_blank" style="color:var(--rosa-oscuro); text-decoration:none;">
+                📱 {{ p.telefono }}
+              </a>
+            </td>
+            <td><strong>${{ "{:,.0f}".format(p.total) }}</strong></td>
+            <td style="font-size:0.88rem;">{{ p.metodo_pago.title() }}</td>
+            <td>
+              <span class="badge-estado badge-{{ p.estado }}">
+                {% if p.estado == 'pendiente' %}⏳
+                {% elif p.estado == 'preparando' %}👩‍🍳
+                {% elif p.estado == 'listo' %}✅
+                {% elif p.estado == 'entregado' %}📦
+                {% else %}❌{% endif %}
+                {{ p.estado.title() }}
+              </span>
+            </td>
+            <td style="font-size:0.82rem; color:var(--texto-claro);">{{ p.creado_en.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <a href="/admin/pedidos/{{ p.id }}" class="btn btn-sm btn-rosa">Ver detalle</a>
+                <form method="POST" action="/admin/pedidos/estado/{{ p.id }}" style="display:flex; gap:4px;">
+                  <select name="estado" style="padding:6px 10px; border:1.5px solid var(--crema-oscuro); border-radius:8px; font-size:0.82rem;">
+                    <option value="pendiente" {% if p.estado == 'pendiente' %}selected{% endif %}>⏳ Pendiente</option>
+                    <option value="preparando" {% if p.estado == 'preparando' %}selected{% endif %}>👩‍🍳 Preparando</option>
+                    <option value="listo" {% if p.estado == 'listo' %}selected{% endif %}>✅ Listo</option>
+                    <option value="entregado" {% if p.estado == 'entregado' %}selected{% endif %}>📦 Entregado</option>
+                    <option value="cancelado" {% if p.estado == 'cancelado' %}selected{% endif %}>❌ Cancelado</option>
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-primary">OK</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="background:white; border-radius:var(--radio); padding:60px 20px; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+      <div style="font-size:3rem; margin-bottom:12px;">📋</div>
+      <p style="color:var(--texto-claro);">No hay pedidos en esta categoría.</p>
+    </div>
+    {% endif %}
+  </main>
+</div>
+</body>
+</html>

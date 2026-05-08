@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menú — Dulce Malia</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <div class="nav-container">
+    <a href="/" class="nav-logo">🎂 Dulce <span>Malia</span></a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="/">Inicio</a></li>
+      <li><a href="/menu" class="activo">Menú</a></li>
+      <li><a href="/#categorias">Categorías</a></li>
+      <li><a href="/#contacto">Contacto</a></li>
+    </ul>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <button class="nav-carrito" onclick="abrirCarrito()">
+        🛍️ Carrito
+        <span class="carrito-badge" id="badge-carrito">0</span>
+      </button>
+      <button class="hamburger" id="hamburger">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero del menú -->
+<div style="background: linear-gradient(135deg, var(--crema), var(--rosa-claro)); padding: 120px 24px 56px; text-align:center;">
+  <div class="section-tag" style="display:inline-flex; margin-bottom:14px;">🎀 Todo el menú</div>
+  <h1 style="font-family:'Playfair Display',serif; font-size:clamp(2rem,4vw,3rem); color:var(--chocolate); margin-bottom:12px;">
+    Nuestra carta artesanal
+  </h1>
+  <p style="color:var(--texto-claro); max-width:500px; margin:0 auto 32px;">
+    Todos los productos están preparados frescos para cada pedido. Pedí por WhatsApp o armá tu carrito directamente acá.
+  </p>
+</div>
+
+<!-- Contenido por categorías -->
+<main style="max-width:1200px; margin:0 auto; padding:40px 24px 80px;">
+
+  <!-- Filtros -->
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:40px;" class="reveal">
+    <button class="btn btn-sm btn-primary activo" data-filtro="todos">🎂 Todos</button>
+    {% for cat in categorias %}
+    <button class="btn btn-sm btn-secundario" data-filtro="{{ cat.id }}">{{ cat.emoji }} {{ cat.nombre }}</button>
+    {% endfor %}
+  </div>
+
+  <!-- Productos dinámicos -->
+  <div class="productos-grid" id="productos-dinamicos"></div>
+
+</main>
+
+<!-- Footer compacto -->
+<footer style="background:var(--chocolate); color:rgba(255,255,255,0.7); padding:28px 24px; text-align:center;">
+  <p style="font-family:'Dancing Script',cursive; font-size:1.3rem; color:white; margin-bottom:6px;">🎂 Dulce Malia</p>
+  <p style="font-size:0.85rem;">
+    📱 1130614355 &nbsp;·&nbsp; 📸 @dulce.malia2512 &nbsp;·&nbsp;
+    <a href="https://wa.me/{{ whatsapp }}" target="_blank" style="color:var(--rosa);">Escribir por WhatsApp</a>
+  </p>
+</footer>
+
+<!-- Mismos paneles del carrito y checkout -->
+<div class="carrito-overlay" id="carrito-overlay"></div>
+<div class="carrito-panel" id="carrito-panel">
+  <div class="carrito-header">
+    <h3>🛍️ Tu carrito</h3>
+    <button class="carrito-cerrar" onclick="cerrarCarrito()">✕</button>
+  </div>
+  <div class="carrito-items" id="carrito-items"></div>
+  <div class="carrito-footer">
+    <div class="carrito-total-row">
+      <span class="carrito-total-label">Total</span>
+      <span class="carrito-total-valor" id="carrito-total">$0</span>
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="abrirCheckout()">
+      💳 Finalizar pedido
+    </button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="checkout-modal">
+  <div class="modal-contenido">
+    <div class="modal-header">
+      <h3>🍰 Completá tu pedido</h3>
+      <p style="font-size:0.88rem; color:var(--texto-claro); margin-top:4px;">Ingresá tus datos para confirmar por WhatsApp</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-grupo"><label>👤 Tu nombre *</label><input type="text" id="ch-nombre" placeholder="¿Cómo te llamás?"></div>
+      <div class="form-grupo"><label>📱 Teléfono *</label><input type="tel" id="ch-telefono" placeholder="Ej: 1130614355"></div>
+      <div class="form-grupo"><label>📍 Dirección</label><input type="text" id="ch-direccion" placeholder="Calle, número, localidad..."></div>
+      <div class="form-grupo">
+        <label>💳 Método de pago</label>
+        <div class="pago-opciones">
+          <label class="pago-opcion"><input type="radio" name="pago" value="efectivo" checked><div class="pago-label"><span class="pago-icon">💵</span>Efectivo</div></label>
+          <label class="pago-opcion"><input type="radio" name="pago" value="transferencia"><div class="pago-label"><span class="pago-icon">🏦</span>Transferencia</div></label>
+          <label class="pago-opcion"><input type="radio" name="pago" value="mercadopago"><div class="pago-label"><span class="pago-icon">💙</span>Mercado Pago</div></label>
+        </div>
+      </div>
+      <div class="form-grupo"><label>📝 Comentarios</label><textarea id="ch-comentarios" placeholder="Fecha de entrega, sabor especial..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secundario" onclick="cerrarCheckout()" style="flex:1;">← Volver</button>
+      <button class="btn btn-wa" id="btn-enviar-pedido" onclick="enviarPedido()" style="flex:2;">💬 Confirmar por WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<div class="wa-flotante">
+  <a href="https://wa.me/{{ whatsapp }}" target="_blank" class="wa-btn-principal">💬</a>
+</div>
+<div class="toast-container" id="toast-container"></div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

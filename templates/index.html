@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dulce Malia — Pastelería Artesanal</title>
+  <meta name="description" content="Pastelería artesanal. Bizcochuelos, budines, pastafrolas y postres hechos con amor. Pedidos al 1130614355.">
+  <meta name="theme-color" content="#F4B8C8">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+  <!-- Favicon emoji -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+</head>
+<body>
+
+<!-- ════════════════════════════════
+     NAVBAR
+════════════════════════════════ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-container">
+    <a href="/" class="nav-logo">🎂 Dulce <span>Malia</span></a>
+
+    <ul class="nav-links" id="nav-links">
+      <li><a href="/" class="activo">Inicio</a></li>
+      <li><a href="/menu">Menú</a></li>
+      <li><a href="#categorias">Categorías</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ul>
+
+    <div style="display:flex; gap:12px; align-items:center;">
+      <button class="nav-carrito" onclick="abrirCarrito()">
+        🛍️ Carrito
+        <span class="carrito-badge" id="badge-carrito">0</span>
+      </button>
+      <button class="hamburger" id="hamburger" aria-label="Menú">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════
+     HERO SECTION
+════════════════════════════════ -->
+<section class="hero" id="inicio">
+  <div class="hero-container">
+    <!-- Texto izquierdo -->
+    <div class="hero-texto">
+      <div class="hero-tag">🌸 Hecho con amor artesanal</div>
+
+      <h1>
+        Dulces que hacen<br>
+        <em>el día más especial</em>
+      </h1>
+
+      <p class="hero-desc">
+        Cada preparación nace de ingredientes seleccionados y recetas que
+        llevan el sabor de lo casero a tu mesa. Bizcochuelos, budines,
+        pastafrolas y postres únicos.
+      </p>
+
+      <div class="hero-botones">
+        <a href="/menu" class="btn btn-primary btn-lg">
+          🎂 Ver el Menú
+        </a>
+        <a href="https://wa.me/{{ whatsapp }}" target="_blank" class="btn btn-wa btn-lg">
+          💬 Consultar
+        </a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="numero">+20</span>
+          <span class="label">Variedades</span>
+        </div>
+        <div class="hero-stat">
+          <span class="numero">100%</span>
+          <span class="label">Artesanal</span>
+        </div>
+        <div class="hero-stat">
+          <span class="numero">⭐⭐⭐⭐⭐</span>
+          <span class="label">Calidad</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visual derecho -->
+    <div class="hero-imagen">
+      <div class="hero-imagen-card">
+        <div class="hero-emoji-grid">
+          <div class="hero-emoji-item">
+            <span class="emoji">🎂</span>
+            <span class="nombre">Bizcochuelos</span>
+          </div>
+          <div class="hero-emoji-item">
+            <span class="emoji">🍮</span>
+            <span class="nombre">Budines</span>
+          </div>
+          <div class="hero-emoji-item">
+            <span class="emoji">🥧</span>
+            <span class="nombre">Pastafrolas</span>
+          </div>
+          <div class="hero-emoji-item">
+            <span class="emoji">🍰</span>
+            <span class="nombre">Chocotorta</span>
+          </div>
+          <div class="hero-emoji-item">
+            <span class="emoji">🍮</span>
+            <span class="nombre">Flan Casero</span>
+          </div>
+          <div class="hero-emoji-item">
+            <span class="emoji">🍑</span>
+            <span class="nombre">Tiramisú</span>
+          </div>
+          <div class="hero-emoji-item">
+            <span class="emoji">🍋</span>
+            <span class="nombre">Limón</span>
+          </div>
+          <div class="hero-emoji-item">
+            <span class="emoji">🍫</span>
+            <span class="nombre">Chocolate</span>
+          </div>
+          <div class="hero-emoji-item">
+            <span class="emoji">🍎</span>
+            <span class="nombre">Manzana</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════
+     CATEGORÍAS
+════════════════════════════════ -->
+<section id="categorias" style="background: white;">
+  <div class="section-container">
+    <div class="section-header reveal">
+      <div class="section-tag">🎀 Nuestras líneas</div>
+      <h2>Explorá las categorías</h2>
+      <p>Cada dulce está preparado con ingredientes frescos y recetas propias, con el cariño de siempre.</p>
+    </div>
+
+    <div class="categorias-grid">
+      {% for cat in categorias %}
+      <a href="/menu?cat={{ cat.id }}" class="categoria-card reveal">
+        <span class="categoria-emoji">{{ cat.emoji }}</span>
+        <div class="categoria-nombre">{{ cat.nombre }}</div>
+        <div class="categoria-desc">{{ cat.descripcion }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════
+     PRODUCTOS DESTACADOS
+════════════════════════════════ -->
+<section id="destacados">
+  <div class="section-container">
+    <div class="section-header reveal">
+      <div class="section-tag">⭐ Los más pedidos</div>
+      <h2>Productos <em>destacados</em></h2>
+      <p>Los favoritos de nuestras clientas, preparados frescamente para cada pedido.</p>
+    </div>
+
+    <!-- Filtros de categoría -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:36px;" class="reveal">
+      <button class="btn btn-sm btn-primary activo" data-filtro="todos">Todos</button>
+      {% for cat in categorias %}
+      <button class="btn btn-sm btn-secundario" data-filtro="{{ cat.id }}">{{ cat.emoji }} {{ cat.nombre }}</button>
+      {% endfor %}
+    </div>
+
+    <!-- Grid de productos — se rellena con JavaScript -->
+    <div class="productos-grid" id="productos-dinamicos">
+      <!-- Los productos se cargan dinámicamente desde /api/productos -->
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════
+     POR QUÉ ELEGIRNOS
+════════════════════════════════ -->
+<section class="features-section">
+  <div class="section-container">
+    <div class="section-header reveal">
+      <div class="section-tag">💝 Nuestra promesa</div>
+      <h2>¿Por qué elegir <em>Dulce Malia</em>?</h2>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-item reveal">
+        <span class="feature-icon">🌿</span>
+        <div class="feature-titulo">Ingredientes naturales</div>
+        <p class="feature-desc">Usamos ingredientes frescos y de calidad en cada preparación, sin conservantes artificiales.</p>
+      </div>
+      <div class="feature-item reveal">
+        <span class="feature-icon">❤️</span>
+        <div class="feature-titulo">Hecho con amor</div>
+        <p class="feature-desc">Cada dulce es preparado a mano, con recetas propias y el cuidado artesanal de siempre.</p>
+      </div>
+      <div class="feature-item reveal">
+        <span class="feature-icon">📦</span>
+        <div class="feature-titulo">Pedidos a medida</div>
+        <p class="feature-desc">Personalizamos tus pedidos para eventos, cumpleaños, reuniones y todo tipo de celebraciones.</p>
+      </div>
+      <div class="feature-item reveal">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-titulo">Respuesta rápida</div>
+        <p class="feature-desc">Respondemos por WhatsApp en minutos. Tu pedido siempre llega fresco y a tiempo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════
+     CONTACTO / CTA FINAL
+════════════════════════════════ -->
+<section id="contacto" style="background: linear-gradient(135deg, var(--rosa-claro), var(--amarillo));">
+  <div class="section-container">
+    <div style="text-align:center; max-width:600px; margin:0 auto;" class="reveal">
+      <div class="section-tag">📱 Hablemos</div>
+      <h2 style="margin-bottom:16px;">¿Lista para hacer tu pedido?</h2>
+      <p style="margin-bottom:36px; font-size:1.05rem; color:var(--texto-claro);">
+        Escribinos por WhatsApp o elegí tus productos y hacé el pedido directamente desde acá.
+        ¡Respondemos enseguida!
+      </p>
+      <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+        <button onclick="abrirCarrito()" class="btn btn-primary btn-lg">
+          🛍️ Ver mi carrito
+        </button>
+        <a href="https://wa.me/{{ whatsapp }}" target="_blank" class="btn btn-wa btn-lg">
+          💬 Escribir por WhatsApp
+        </a>
+      </div>
+      <p style="margin-top:24px; font-size:0.9rem; color:var(--texto-claro);">
+        📞 {{ whatsapp[2:] }} · 📸 @dulce.malia2512
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════
+     FOOTER
+════════════════════════════════ -->
+<footer id="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <span class="logo">🎂 Dulce Malia</span>
+      <p>Pastelería artesanal con el sabor de lo casero. Cada dulce es una experiencia única, preparada con ingredientes frescos y mucho cariño.</p>
+      <div style="margin-top:16px; display:flex; gap:12px;">
+        <a href="https://wa.me/{{ whatsapp }}" target="_blank" class="btn btn-wa btn-sm">💬 WhatsApp</a>
+      </div>
+    </div>
+
+    <div>
+      <div class="footer-titulo">Menú</div>
+      <ul class="footer-links">
+        <li><a href="/menu">🎂 Bizcochuelos</a></li>
+        <li><a href="/menu">🍮 Budines</a></li>
+        <li><a href="/menu">🥧 Pastafrolas</a></li>
+        <li><a href="/menu">🍰 Postres</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer-titulo">Contacto</div>
+      <ul class="footer-links">
+        <li><a href="https://wa.me/{{ whatsapp }}" target="_blank">📱 1130614355</a></li>
+        <li><a href="https://instagram.com/dulce.malia2512" target="_blank">📸 @dulce.malia2512</a></li>
+        <li><a href="/admin">⚙️ Panel Admin</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>© 2024 Dulce Malia · Pastelería Artesanal 🎂</p>
+    <p style="font-size:0.82rem;">Hecho con 💕 y mucha azúcar</p>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════
+     CARRITO PANEL LATERAL
+════════════════════════════════ -->
+<div class="carrito-overlay" id="carrito-overlay"></div>
+<div class="carrito-panel" id="carrito-panel">
+  <div class="carrito-header">
+    <h3>🛍️ Tu carrito</h3>
+    <button class="carrito-cerrar" onclick="cerrarCarrito()">✕</button>
+  </div>
+
+  <div class="carrito-items" id="carrito-items">
+    <!-- Se rellena con JavaScript -->
+  </div>
+
+  <div class="carrito-footer">
+    <div class="carrito-total-row">
+      <span class="carrito-total-label">Total</span>
+      <span class="carrito-total-valor" id="carrito-total">$0</span>
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="abrirCheckout()">
+      💳 Finalizar pedido
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MODAL CHECKOUT
+════════════════════════════════ -->
+<div class="modal-overlay" id="checkout-modal">
+  <div class="modal-contenido">
+    <div class="modal-header">
+      <h3>🍰 Completá tu pedido</h3>
+      <p style="font-size:0.88rem; color:var(--texto-claro); margin-top:4px;">
+        Ingresá tus datos para confirmar por WhatsApp
+      </p>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grupo">
+        <label>👤 Tu nombre *</label>
+        <input type="text" id="ch-nombre" placeholder="¿Cómo te llamás?">
+      </div>
+      <div class="form-grupo">
+        <label>📱 Teléfono / WhatsApp *</label>
+        <input type="tel" id="ch-telefono" placeholder="Ej: 1130614355">
+      </div>
+      <div class="form-grupo">
+        <label>📍 Dirección de entrega</label>
+        <input type="text" id="ch-direccion" placeholder="Calle, número, piso, localidad...">
+      </div>
+      <div class="form-grupo">
+        <label>💳 Método de pago</label>
+        <div class="pago-opciones">
+          <label class="pago-opcion">
+            <input type="radio" name="pago" value="efectivo" checked>
+            <div class="pago-label">
+              <span class="pago-icon">💵</span>
+              Efectivo
+            </div>
+          </label>
+          <label class="pago-opcion">
+            <input type="radio" name="pago" value="transferencia">
+            <div class="pago-label">
+              <span class="pago-icon">🏦</span>
+              Transferencia
+            </div>
+          </label>
+          <label class="pago-opcion">
+            <input type="radio" name="pago" value="mercadopago">
+            <div class="pago-label">
+              <span class="pago-icon">💙</span>
+              Mercado Pago
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="form-grupo">
+        <label>📝 Comentarios adicionales</label>
+        <textarea id="ch-comentarios" placeholder="Fecha de entrega, sabor especial, dedicatoria..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secundario" onclick="cerrarCheckout()" style="flex:1;">
+        ← Volver
+      </button>
+      <button class="btn btn-wa" id="btn-enviar-pedido" onclick="enviarPedido()" style="flex:2;">
+        💬 Confirmar por WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     BOTÓN FLOTANTE WHATSAPP
+════════════════════════════════ -->
+<div class="wa-flotante">
+  <a href="https://wa.me/{{ whatsapp }}" target="_blank" class="wa-btn-principal" title="Escribirnos por WhatsApp">
+    💬
+  </a>
+</div>
+
+<!-- ════════════════════════════════
+     CONTENEDOR DE TOASTS
+════════════════════════════════ -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Script principal -->
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
