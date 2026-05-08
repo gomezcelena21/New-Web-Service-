@@ -43,6 +43,8 @@ WHATSAPP_NUMBER = "541130614355"
 
 # Inicializar SQLAlchemy
 db = SQLAlchemy(app)
+with app.pp_context():
+    db.create_all()
 
 
 # ══════════════════════════════════════════════
