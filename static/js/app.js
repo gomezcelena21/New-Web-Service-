@@ -3,30 +3,14 @@
  * ║     DULCE MALIA — JavaScript principal           ║
  * ║     Maneja: carrito, checkout, animaciones       ║
  * ╚══════════════════════════════════════════════════╝
- *
- * Este archivo controla toda la interactividad del frontend:
- * - El carrito de compras (guardado en localStorage)
- * - El checkout y formulario de datos del cliente
- * - Animaciones y efectos visuales
- * - Comunicación con el backend via fetch (API REST)
  */
 
-// ─────────────────────────────────────
-// ESTADO GLOBAL — El "cerebro" del carrito
-// ─────────────────────────────────────
 let carrito = JSON.parse(localStorage.getItem('dulcemalia_carrito') || '[]');
 
-/**
- * Guarda el carrito en localStorage para que persista
- * aunque el usuario recargue la página.
- */
 function guardarCarrito() {
   localStorage.setItem('dulcemalia_carrito', JSON.stringify(carrito));
 }
 
-// ─────────────────────────────────────
-// NAVEGACIÓN — Navbar con scroll
-// ─────────────────────────────────────
 window.addEventListener('scroll', () => {
   const navbar = document.querySelector('.navbar');
   if (navbar) {
@@ -34,7 +18,6 @@ window.addEventListener('scroll', () => {
   }
 });
 
-// Hamburguesa para móvil
 const hamburger = document.querySelector('.hamburger');
 const navLinks = document.querySelector('.nav-links');
 if (hamburger && navLinks) {
@@ -43,10 +26,6 @@ if (hamburger && navLinks) {
   });
 }
 
-// ─────────────────────────────────────
-// ANIMACIONES DE ENTRADA (Intersection Observer)
-// Las cards aparecen suavemente al hacer scroll
-// ─────────────────────────────────────
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry, i) => {
     if (entry.isIntersecting) {
@@ -56,17 +35,8 @@ const observer = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.1 });
 
-// Observar todos los elementos con clase .reveal
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// ─────────────────────────────────────
-// CARRITO — Funciones principales
-// ─────────────────────────────────────
-
-/**
- * Agrega un producto al carrito.
- * Si ya existe, aumenta la cantidad.
- */
 function agregarAlCarrito(id, nombre, precio, emoji = '🎂') {
   const existente = carrito.find(item => item.id === id);
 
@@ -80,7 +50,6 @@ function agregarAlCarrito(id, nombre, precio, emoji = '🎂') {
   actualizarUI();
   mostrarToast(`¡${nombre} agregado al carrito! 🎂`, 'success');
 
-  // Efecto visual en el botón
   const btn = document.querySelector(`[data-producto-id="${id}"]`);
   if (btn) {
     btn.classList.add('agregado');
@@ -92,10 +61,6 @@ function agregarAlCarrito(id, nombre, precio, emoji = '🎂') {
   }
 }
 
-/**
- * Cambia la cantidad de un producto en el carrito.
- * Si llega a 0, lo elimina.
- */
 function cambiarCantidad(id, cambio) {
   const item = carrito.find(i => i.id === id);
   if (!item) return;
@@ -110,7 +75,6 @@ function cambiarCantidad(id, cambio) {
   renderizarCarritoPanel();
 }
 
-/** Elimina un producto del carrito completamente. */
 function eliminarDelCarrito(id) {
   carrito = carrito.filter(i => i.id !== id);
   guardarCarrito();
@@ -118,7 +82,6 @@ function eliminarDelCarrito(id) {
   renderizarCarritoPanel();
 }
 
-/** Vacía todo el carrito. */
 function vaciarCarrito() {
   carrito = [];
   guardarCarrito();
@@ -126,10 +89,6 @@ function vaciarCarrito() {
   renderizarCarritoPanel();
 }
 
-/**
- * Actualiza el badge del navbar con la cantidad total de items.
- * Un "badge" es el numerito rojo sobre el ícono del carrito.
- */
 function actualizarUI() {
   const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
   const badge = document.querySelector('.carrito-badge');
@@ -139,10 +98,6 @@ function actualizarUI() {
   }
 }
 
-/**
- * Renderiza (dibuja) el contenido del panel lateral del carrito.
- * Se llama cada vez que cambia el carrito.
- */
 function renderizarCarritoPanel() {
   const contenedor = document.getElementById('carrito-items');
   const totalEl = document.getElementById('carrito-total');
@@ -158,7 +113,6 @@ function renderizarCarritoPanel() {
     return;
   }
 
-  // Renderizar cada item
   contenedor.innerHTML = carrito.map(item => `
     <div class="carrito-item">
       <div class="carrito-item-emoji">${item.emoji}</div>
@@ -175,14 +129,9 @@ function renderizarCarritoPanel() {
     </div>
   `).join('');
 
-  // Calcular y mostrar total
   const total = carrito.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
   if (totalEl) totalEl.textContent = '$' + total.toLocaleString('es-AR');
 }
-
-// ─────────────────────────────────────
-// PANEL DEL CARRITO — Abrir / Cerrar
-// ─────────────────────────────────────
 
 function abrirCarrito() {
   renderizarCarritoPanel();
@@ -198,10 +147,6 @@ function cerrarCarrito() {
 }
 
 document.getElementById('carrito-overlay')?.addEventListener('click', cerrarCarrito);
-
-// ─────────────────────────────────────
-// CHECKOUT — Envío del pedido
-// ─────────────────────────────────────
 
 function abrirCheckout() {
   if (carrito.length === 0) {
@@ -220,11 +165,6 @@ function cerrarCheckout() {
   document.body.style.overflow = '';
 }
 
-/**
- * Envía el pedido al backend.
- * Usa fetch() para hacer una petición POST con los datos del carrito y del cliente.
- * El backend responde con un link de WhatsApp para confirmar el pedido.
- */
 async function enviarPedido() {
   const nombre = document.getElementById('ch-nombre')?.value.trim();
   const telefono = document.getElementById('ch-telefono')?.value.trim();
@@ -232,7 +172,6 @@ async function enviarPedido() {
   const comentarios = document.getElementById('ch-comentarios')?.value.trim();
   const metodo_pago = document.querySelector('input[name="pago"]:checked')?.value || 'efectivo';
 
-  // Validación básica
   if (!nombre || !telefono) {
     mostrarToast('Por favor completá nombre y teléfono 📱', 'error');
     return;
@@ -245,7 +184,6 @@ async function enviarPedido() {
   }
 
   try {
-    // fetch() envía los datos al servidor
     const response = await fetch('/realizar-pedido', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -262,7 +200,6 @@ async function enviarPedido() {
       vaciarCarrito();
       mostrarToast('¡Pedido enviado! Redirigiendo a WhatsApp... 🎉', 'success');
 
-      // Abrir WhatsApp con el pedido detallado
       setTimeout(() => {
         window.open(data.whatsapp_link, '_blank');
       }, 1000);
@@ -280,14 +217,6 @@ async function enviarPedido() {
   }
 }
 
-// ─────────────────────────────────────
-// CARGA DINÁMICA DE PRODUCTOS
-// ─────────────────────────────────────
-
-/**
- * Carga los productos desde la API del servidor y los muestra en la página.
- * Parámetro opcional: categoria_id para filtrar.
- */
 async function cargarProductos(categoria_id = null) {
   const contenedor = document.getElementById('productos-dinamicos');
   if (!contenedor) return;
@@ -316,7 +245,7 @@ async function cargarProductos(categoria_id = null) {
         <div class="producto-card reveal">
           <div class="producto-imagen-wrap">
             ${tieneImagen
-              ? `<img src="/static/uploads/${p.imagen}" alt="${p.nombre}" class="producto-imagen">`
+              ? `<img src="${p.imagen}" alt="${p.nombre}" class="producto-imagen">`
               : `<div class="producto-imagen-placeholder">
                    <span class="ph-emoji">${emoji}</span>
                    <span class="ph-texto">${p.categoria}</span>
@@ -342,7 +271,6 @@ async function cargarProductos(categoria_id = null) {
         </div>`;
     }).join('');
 
-    // Animar las nuevas cards
     document.querySelectorAll('.producto-card.reveal').forEach(el => observer.observe(el));
 
   } catch (err) {
@@ -351,13 +279,9 @@ async function cargarProductos(categoria_id = null) {
   }
 }
 
-// ─────────────────────────────────────
-// FILTROS DE CATEGORÍA
-// ─────────────────────────────────────
 function configurarFiltros() {
   document.querySelectorAll('[data-filtro]').forEach(btn => {
     btn.addEventListener('click', () => {
-      // Actualizar botón activo
       document.querySelectorAll('[data-filtro]').forEach(b => b.classList.remove('activo'));
       btn.classList.add('activo');
 
@@ -367,14 +291,6 @@ function configurarFiltros() {
   });
 }
 
-// ─────────────────────────────────────
-// TOASTS — Notificaciones temporales
-// ─────────────────────────────────────
-
-/**
- * Muestra una pequeña notificación que desaparece sola.
- * tipo: 'success' (verde) | 'error' (rojo)
- */
 function mostrarToast(mensaje, tipo = 'success') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -387,16 +303,11 @@ function mostrarToast(mensaje, tipo = 'success') {
   setTimeout(() => toast.remove(), 3200);
 }
 
-// ─────────────────────────────────────
-// INICIALIZACIÓN
-// Esto se ejecuta cuando la página termina de cargar
-// ─────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   actualizarUI();
   cargarProductos();
   configurarFiltros();
 
-  // Cerrar modal haciendo click fuera
   document.getElementById('checkout-modal')?.addEventListener('click', function(e) {
     if (e.target === this) cerrarCheckout();
   });
