@@ -11,13 +11,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from functools import wraps
+import cloudinary
+import cloudinary.uploader
 import os
-import json
 
 app = Flask(__name__)
 
 # ══════════════════════════════════════════════
-# CONFIGURACIÓN SEGURA — todo desde variables de entorno
+# CONFIGURACIÓN SEGURA
 # ══════════════════════════════════════════════
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'cambia_esto_en_produccion')
 
@@ -32,14 +33,20 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_recycle': 300,
 }
 
-app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
-# Datos sensibles desde variables de entorno
 WHATSAPP_NUMBER = os.environ.get('WHATSAPP_NUMBER', '')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'dulcemalia2024')
+
+# ══════════════════════════════════════════════
+# CONFIGURACIÓN CLOUDINARY
+# ══════════════════════════════════════════════
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.environ.get('CLOUDINARY_API_KEY'),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET')
+)
 
 # Límite de intentos de login
 LOGIN_INTENTOS = {}
@@ -82,7 +89,7 @@ class Producto(db.Model):
     nombre = db.Column(db.String(150), nullable=False)
     descripcion = db.Column(db.Text)
     precio = db.Column(db.Float, nullable=False)
-    imagen = db.Column(db.String(255), default='default_cake.png')
+    imagen = db.Column(db.String(500), default='default_cake.png')
     stock = db.Column(db.Integer, default=99)
     disponible = db.Column(db.Boolean, default=True)
     destacado = db.Column(db.Boolean, default=False)
@@ -124,6 +131,24 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def subir_imagen_cloudinary(file):
+    """Sube una imagen a Cloudinary y devuelve la URL."""
+    try:
+        resultado = cloudinary.uploader.upload(
+            file,
+            folder='dulce_malia',
+            transformation=[
+                {'width': 800, 'height': 800, 'crop': 'limit'},
+                {'quality': 'auto'},
+                {'fetch_format': 'auto'}
+            ]
+        )
+        return resultado['secure_url']
+    except Exception as e:
+        print(f"Error subiendo imagen: {e}")
+        return None
+
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -134,7 +159,6 @@ def login_required(f):
 
 
 def check_login_intentos(ip):
-    """Bloquea la IP si supera el máximo de intentos fallidos."""
     if ip in LOGIN_INTENTOS:
         if LOGIN_INTENTOS[ip] >= MAX_INTENTOS:
             return False
@@ -217,7 +241,6 @@ def realizar_pedido():
     cliente = data['cliente']
     carrito = data['carrito']
 
-    # Validar que el carrito no esté vacío ni tenga cantidades negativas
     for item in carrito:
         if item.get('cantidad', 0) <= 0 or item.get('precio', 0) <= 0:
             return jsonify({'error': 'Datos de carrito inválidos'}), 400
@@ -336,20 +359,18 @@ def admin_nuevo_producto():
         destacado = 'destacado' in request.form
         disponible = 'disponible' in request.form
 
-        imagen_nombre = 'default_cake.png'
+        imagen_url = 'default_cake.png'
         if 'imagen' in request.files:
             file = request.files['imagen']
             if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-                filename = timestamp + filename
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                imagen_nombre = filename
+                url = subir_imagen_cloudinary(file)
+                if url:
+                    imagen_url = url
 
         producto = Producto(
             nombre=nombre, precio=precio, categoria_id=categoria_id,
             descripcion=descripcion, stock=stock, destacado=destacado,
-            disponible=disponible, imagen=imagen_nombre
+            disponible=disponible, imagen=imagen_url
         )
         db.session.add(producto)
         db.session.commit()
@@ -376,11 +397,9 @@ def admin_editar_producto(id):
         if 'imagen' in request.files:
             file = request.files['imagen']
             if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-                filename = timestamp + filename
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                producto.imagen = filename
+                url = subir_imagen_cloudinary(file)
+                if url:
+                    producto.imagen = url
 
         db.session.commit()
         flash('¡Producto actualizado!', 'success')
