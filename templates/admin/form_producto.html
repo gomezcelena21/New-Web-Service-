@@ -70,7 +70,7 @@
         <label>🖼️ Imagen del producto</label>
         {% if producto and producto.imagen and producto.imagen != 'default_cake.png' %}
         <div style="margin-bottom:10px;">
-          <img src="{{ url_for('static', filename='uploads/' + producto.imagen) }}" style="height:80px; border-radius:10px; object-fit:cover;">
+          <img src="{{ producto.imagen }}" style="height:80px; border-radius:10px; object-fit:cover;">
           <span style="font-size:0.82rem; color:var(--texto-claro); margin-left:8px;">Imagen actual</span>
         </div>
         {% endif %}
