@@ -1,56 +1,56 @@
 """
 ╔══════════════════════════════════════════════════════╗
-║          DULCE MALIA — Pastelería Artesanal          ║
-║          Aplicación principal Flask                  ║
+║  DULCE MALIA — Pastelería Artesanal                   ║
+║  Aplicación principal Flask                            ║
 ╚══════════════════════════════════════════════════════╝
 """
-
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from functools import wraps
-import cloudinary
-import cloudinary.uploader
 import os
+import secrets
+import json
 
 app = Flask(__name__)
 
-# ══════════════════════════════════════════════
-# CONFIGURACIÓN SEGURA
-# ══════════════════════════════════════════════
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'cambia_esto_en_produccion')
+# ──────────────────────────────────────────────
+# SECRET_KEY: obligatoria en producción.
+# Si no está seteada, generamos una aleatoria de arranque
+# (las sesiones se invalidan en cada reinicio, pero NUNCA
+# queda una clave fija y conocida dando vueltas en el código).
+# ──────────────────────────────────────────────
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    SECRET_KEY = secrets.token_hex(32)
+    print("⚠️  ADVERTENCIA: no hay SECRET_KEY configurada en las variables de entorno.")
+    print("⚠️  Se generó una clave temporal — las sesiones se cerrarán en cada reinicio.")
+    print("⚠️  Configurá SECRET_KEY en Render (Environment) para producción.")
+app.config['SECRET_KEY'] = SECRET_KEY
 
+# ──────────────────────────────────────────────
+# BASE DE DATOS: PostgreSQL en Render, SQLite local
+# ──────────────────────────────────────────────
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///dulce_malia.db')
+
+# Render entrega URLs con prefijo "postgres://" pero SQLAlchemy requiere "postgresql://"
 if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,
-    'pool_recycle': 300,
+    'pool_pre_ping': True,   # verifica la conexión antes de usarla
+    'pool_recycle': 300,     # recicla conexiones cada 5 minutos
 }
 
+app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
-WHATSAPP_NUMBER = os.environ.get('WHATSAPP_NUMBER', '')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'dulcemalia2024')
-
-# ══════════════════════════════════════════════
-# CONFIGURACIÓN CLOUDINARY
-# ══════════════════════════════════════════════
-cloudinary.config(
-    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.environ.get('CLOUDINARY_API_KEY'),
-    api_secret=os.environ.get('CLOUDINARY_API_SECRET')
-)
-
-# Límite de intentos de login
-LOGIN_INTENTOS = {}
-MAX_INTENTOS = 5
+WHATSAPP_NUMBER = os.environ.get('WHATSAPP_NUMBER', '541130614355')
 
 db = SQLAlchemy(app)
 
@@ -58,7 +58,6 @@ db = SQLAlchemy(app)
 # ══════════════════════════════════════════════
 # MODELOS DE BASE DE DATOS
 # ══════════════════════════════════════════════
-
 class Administrador(db.Model):
     __tablename__ = 'administradores'
     id = db.Column(db.Integer, primary_key=True)
@@ -89,7 +88,7 @@ class Producto(db.Model):
     nombre = db.Column(db.String(150), nullable=False)
     descripcion = db.Column(db.Text)
     precio = db.Column(db.Float, nullable=False)
-    imagen = db.Column(db.String(500), default='default_cake.png')
+    imagen = db.Column(db.String(255), default='default_cake.png')
     stock = db.Column(db.Integer, default=99)
     disponible = db.Column(db.Boolean, default=True)
     destacado = db.Column(db.Boolean, default=False)
@@ -126,27 +125,8 @@ class DetallePedido(db.Model):
 # ══════════════════════════════════════════════
 # FUNCIONES AUXILIARES
 # ══════════════════════════════════════════════
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def subir_imagen_cloudinary(file):
-    """Sube una imagen a Cloudinary y devuelve la URL."""
-    try:
-        resultado = cloudinary.uploader.upload(
-            file,
-            folder='dulce_malia',
-            transformation=[
-                {'width': 800, 'height': 800, 'crop': 'limit'},
-                {'quality': 'auto'},
-                {'fetch_format': 'auto'}
-            ]
-        )
-        return resultado['secure_url']
-    except Exception as e:
-        print(f"Error subiendo imagen: {e}")
-        return None
 
 
 def login_required(f):
@@ -158,40 +138,26 @@ def login_required(f):
     return decorated_function
 
 
-def check_login_intentos(ip):
-    if ip in LOGIN_INTENTOS:
-        if LOGIN_INTENTOS[ip] >= MAX_INTENTOS:
-            return False
-    return True
-
-
-def registrar_intento_fallido(ip):
-    LOGIN_INTENTOS[ip] = LOGIN_INTENTOS.get(ip, 0) + 1
-
-
-def resetear_intentos(ip):
-    LOGIN_INTENTOS.pop(ip, None)
-
-
 def generar_mensaje_whatsapp(pedido, detalles):
     lineas = [
-        f"NUEVO PEDIDO - Dulce Malia",
-        f"==================",
-        f"Cliente: {pedido.nombre_cliente}",
-        f"Telefono: {pedido.telefono}",
-        f"Direccion: {pedido.direccion or 'No especificada'}",
+        f"🍰 *NUEVO PEDIDO - Dulce Malia*",
+        f"━━━━━━━━━━━━━━━━━━",
+        f"👤 *Cliente:* {pedido.nombre_cliente}",
+        f"📱 *Teléfono:* {pedido.telefono}",
+        f"📍 *Dirección:* {pedido.direccion or 'No especificada'}",
         f"",
-        f"Productos:",
+        f"🛒 *Productos:*",
     ]
     for d in detalles:
-        lineas.append(f"  - {d.nombre_producto} x{d.cantidad} -- ${d.subtotal:,.0f}")
+        lineas.append(f"  • {d.nombre_producto} x{d.cantidad} — ${d.subtotal:,.0f}")
     lineas += [
         f"",
-        f"Total: ${pedido.total:,.0f}",
-        f"Pago: {pedido.metodo_pago.title()}",
+        f"💰 *Total:* ${pedido.total:,.0f}",
+        f"💳 *Pago:* {pedido.metodo_pago.title()}",
     ]
     if pedido.comentarios:
-        lineas.append(f"Comentarios: {pedido.comentarios}")
+        lineas.append(f"📝 *Comentarios:* {pedido.comentarios}")
+
     mensaje = "\n".join(lineas)
     import urllib.parse
     return f"https://wa.me/{WHATSAPP_NUMBER}?text={urllib.parse.quote(mensaje)}"
@@ -200,7 +166,6 @@ def generar_mensaje_whatsapp(pedido, detalles):
 # ══════════════════════════════════════════════
 # RUTAS PÚBLICAS
 # ══════════════════════════════════════════════
-
 @app.route('/')
 def index():
     destacados = Producto.query.filter_by(destacado=True, disponible=True).limit(8).all()
@@ -240,18 +205,13 @@ def realizar_pedido():
 
     cliente = data['cliente']
     carrito = data['carrito']
-
-    for item in carrito:
-        if item.get('cantidad', 0) <= 0 or item.get('precio', 0) <= 0:
-            return jsonify({'error': 'Datos de carrito inválidos'}), 400
-
     total = sum(item['precio'] * item['cantidad'] for item in carrito)
 
     pedido = Pedido(
-        nombre_cliente=cliente.get('nombre', '')[:150],
-        telefono=cliente.get('telefono', '')[:30],
-        direccion=cliente.get('direccion', '')[:500],
-        comentarios=cliente.get('comentarios', '')[:500],
+        nombre_cliente=cliente.get('nombre', ''),
+        telefono=cliente.get('telefono', ''),
+        direccion=cliente.get('direccion', ''),
+        comentarios=cliente.get('comentarios', ''),
         metodo_pago=cliente.get('metodo_pago', 'efectivo'),
         total=total
     )
@@ -261,7 +221,7 @@ def realizar_pedido():
     detalles = []
     for item in carrito:
         producto = Producto.query.get(item['id'])
-        if producto and producto.disponible:
+        if producto:
             detalle = DetallePedido(
                 pedido_id=pedido.id,
                 producto_id=item['id'],
@@ -287,28 +247,18 @@ def realizar_pedido():
 # ══════════════════════════════════════════════
 # RUTAS DEL PANEL ADMINISTRADOR
 # ══════════════════════════════════════════════
-
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
-    ip = request.remote_addr
-
-    if not check_login_intentos(ip):
-        flash('Demasiados intentos fallidos. Intenta más tarde.', 'error')
-        return render_template('admin/login.html')
-
     if request.method == 'POST':
-        usuario = request.form.get('usuario', '').strip()
-        password = request.form.get('password', '')
-        admin = Administrador.query.filter_by(usuario=usuario).first()
+        usuario = request.form.get('usuario')
+        password = request.form.get('password')
 
+        admin = Administrador.query.filter_by(usuario=usuario).first()
         if admin and admin.check_password(password):
-            resetear_intentos(ip)
             session['admin_id'] = admin.id
             session['admin_usuario'] = admin.usuario
-            session.permanent = False
             return redirect(url_for('admin_dashboard'))
         else:
-            registrar_intento_fallido(ip)
             flash('Usuario o contraseña incorrectos', 'error')
 
     return render_template('admin/login.html')
@@ -330,12 +280,13 @@ def admin_dashboard():
     ingresos = db.session.query(db.func.sum(Pedido.total)).filter(
         Pedido.estado != 'cancelado'
     ).scalar() or 0
+
     return render_template('admin/dashboard.html',
-                           total_productos=total_productos,
-                           total_pedidos=total_pedidos,
-                           pedidos_pendientes=pedidos_pendientes,
-                           pedidos_recientes=pedidos_recientes,
-                           ingresos=ingresos)
+                            total_productos=total_productos,
+                            total_pedidos=total_pedidos,
+                            pedidos_pendientes=pedidos_pendientes,
+                            pedidos_recientes=pedidos_recientes,
+                            ingresos=ingresos)
 
 
 @app.route('/admin/productos')
@@ -351,30 +302,32 @@ def admin_productos():
 def admin_nuevo_producto():
     categorias = Categoria.query.all()
     if request.method == 'POST':
-        nombre = request.form.get('nombre', '')[:150]
+        nombre = request.form.get('nombre')
         precio = float(request.form.get('precio', 0))
         categoria_id = int(request.form.get('categoria_id'))
-        descripcion = request.form.get('descripcion', '')[:500]
+        descripcion = request.form.get('descripcion', '')
         stock = int(request.form.get('stock', 99))
         destacado = 'destacado' in request.form
         disponible = 'disponible' in request.form
 
-        imagen_url = 'default_cake.png'
+        imagen_nombre = 'default_cake.png'
         if 'imagen' in request.files:
             file = request.files['imagen']
             if file and file.filename and allowed_file(file.filename):
-                url = subir_imagen_cloudinary(file)
-                if url:
-                    imagen_url = url
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+                filename = timestamp + filename
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                imagen_nombre = filename
 
         producto = Producto(
             nombre=nombre, precio=precio, categoria_id=categoria_id,
             descripcion=descripcion, stock=stock, destacado=destacado,
-            disponible=disponible, imagen=imagen_url
+            disponible=disponible, imagen=imagen_nombre
         )
         db.session.add(producto)
         db.session.commit()
-        flash('¡Producto agregado exitosamente!', 'success')
+        flash('¡Producto agregado exitosamente! 🎂', 'success')
         return redirect(url_for('admin_productos'))
 
     return render_template('admin/form_producto.html', categorias=categorias, producto=None)
@@ -385,11 +338,12 @@ def admin_nuevo_producto():
 def admin_editar_producto(id):
     producto = Producto.query.get_or_404(id)
     categorias = Categoria.query.all()
+
     if request.method == 'POST':
-        producto.nombre = request.form.get('nombre', '')[:150]
+        producto.nombre = request.form.get('nombre')
         producto.precio = float(request.form.get('precio', 0))
         producto.categoria_id = int(request.form.get('categoria_id'))
-        producto.descripcion = request.form.get('descripcion', '')[:500]
+        producto.descripcion = request.form.get('descripcion', '')
         producto.stock = int(request.form.get('stock', 99))
         producto.destacado = 'destacado' in request.form
         producto.disponible = 'disponible' in request.form
@@ -397,12 +351,14 @@ def admin_editar_producto(id):
         if 'imagen' in request.files:
             file = request.files['imagen']
             if file and file.filename and allowed_file(file.filename):
-                url = subir_imagen_cloudinary(file)
-                if url:
-                    producto.imagen = url
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+                filename = timestamp + filename
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                producto.imagen = filename
 
         db.session.commit()
-        flash('¡Producto actualizado!', 'success')
+        flash('¡Producto actualizado! ✨', 'success')
         return redirect(url_for('admin_productos'))
 
     return render_template('admin/form_producto.html', categorias=categorias, producto=producto)
@@ -446,22 +402,41 @@ def admin_cambiar_estado(id):
     if nuevo_estado in estados_validos:
         pedido.estado = nuevo_estado
         db.session.commit()
-        flash(f'Estado actualizado a: {nuevo_estado.upper()}', 'success')
+        flash(f'Estado actualizado a: {nuevo_estado.upper()} ✅', 'success')
     return redirect(url_for('admin_pedidos'))
 
 
 # ══════════════════════════════════════════════
 # INICIALIZACIÓN DE LA BASE DE DATOS
 # ══════════════════════════════════════════════
-
 def inicializar_db():
     with app.app_context():
         db.create_all()
 
         if not Administrador.query.first():
-            admin = Administrador(usuario='admin')
-            admin.set_password(ADMIN_PASSWORD)
+            # La contraseña inicial SIEMPRE sale de una variable de entorno.
+            # Si no está seteada, se genera una aleatoria y se imprime UNA
+            # sola vez en los logs de arranque para que la copies y la
+            # cambies desde el panel admin cuanto antes.
+            admin_password = os.environ.get('ADMIN_PASSWORD_INICIAL')
+            password_generada = False
+            if not admin_password:
+                admin_password = secrets.token_urlsafe(12)
+                password_generada = True
+
+            admin = Administrador(usuario=os.environ.get('ADMIN_USUARIO_INICIAL', 'admin'))
+            admin.set_password(admin_password)
             db.session.add(admin)
+
+            if password_generada:
+                print("=" * 60)
+                print("🔑 Se creó el usuario admin con una contraseña generada:")
+                print(f"   Usuario:    {admin.usuario}")
+                print(f"   Contraseña: {admin_password}")
+                print("   Guardala ahora y cambiala desde el panel admin.")
+                print("   Para fijar tu propia contraseña, configurá la")
+                print("   variable de entorno ADMIN_PASSWORD_INICIAL en Render.")
+                print("=" * 60)
 
         if not Categoria.query.first():
             categorias_data = [
@@ -529,6 +504,10 @@ def inicializar_db():
         print("✅ Base de datos inicializada correctamente")
 
 
+# ══════════════════════════════════════════════
+# PUNTO DE ENTRADA
+# ══════════════════════════════════════════════
+# Inicializar siempre (necesario para gunicorn en Render)
 inicializar_db()
 
 if __name__ == '__main__':
