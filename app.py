@@ -418,13 +418,13 @@ def inicializar_db():
             # Si no está seteada, se genera una aleatoria y se imprime UNA
             # sola vez en los logs de arranque para que la copies y la
             # cambies desde el panel admin cuanto antes.
-            admin_password = os.environ.get('ADMIN_PASSWORD_INICIAL')
+            admin_password = os.environ.get('ADMIN_PASSWORD')
             password_generada = False
             if not admin_password:
                 admin_password = secrets.token_urlsafe(12)
                 password_generada = True
 
-            admin = Administrador(usuario=os.environ.get('ADMIN_USUARIO_INICIAL', 'admin'))
+            admin = Administrador(usuario=os.environ.get('ADMIN_USUARIO', 'admin'))
             admin.set_password(admin_password)
             db.session.add(admin)
 
@@ -435,7 +435,7 @@ def inicializar_db():
                 print(f"   Contraseña: {admin_password}")
                 print("   Guardala ahora y cambiala desde el panel admin.")
                 print("   Para fijar tu propia contraseña, configurá la")
-                print("   variable de entorno ADMIN_PASSWORD_INICIAL en Render.")
+                print("   variable de entorno ADMIN_PASSWORD en Render.")
                 print("=" * 60)
 
         if not Categoria.query.first():
